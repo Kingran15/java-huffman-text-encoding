@@ -15,9 +15,10 @@ public class Huffman {
             encode(new File(filename));
         }
         else {
-            decodeTree(new File(filename));
+            decode(new File(filename));
         }
     }
+
 
     private static void encode(File f) {
         try {
@@ -202,7 +203,7 @@ public class Huffman {
         }
     }
 
-    private static void decodeTree(File f) {
+    private static void decode(File f) {
         try {
             BufferedInputStream bs = new BufferedInputStream(new FileInputStream(f));
 
@@ -339,6 +340,41 @@ public class Huffman {
         }
     }
 
+    private static void readableBin(File f)
+    {
+        try {
+            BufferedInputStream bi = new BufferedInputStream(new FileInputStream(f));
+            BufferedWriter bw = new BufferedWriter(new FileWriter("readable.txt"));
+            int a;
+
+            int bytes = 0;
+            while((a=bi.read()) != -1)
+            {
+                String s = Integer.toBinaryString(a);
+                while(s.length() < 8)
+                {
+                    s = "0" + s;
+                }
+                bw.write(s.substring(0,4) + " " + s.substring(4) + " ");
+
+                if(bytes > 10)
+                {
+                    bw.write('\n');
+                    bytes = 0;
+                }
+
+                bytes++;
+            }
+
+            bw.close();
+            bi.close();
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
     private static class Node {
         int freq;
         char c;
@@ -357,11 +393,6 @@ public class Huffman {
         {
             isLeaf = false;
             this.freq = freq;
-        }
-
-        public Node()
-        {
-
         }
 
         public String toString()

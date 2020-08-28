@@ -1,3 +1,983 @@
-I am Alpha and Omega,
-the beginning and the end,
-the first and the last.
+//var composites = sieve(1000);
+var justCorrect = true;
+var justChanged = false;
+var allFunctions = [multiplication,divisionNoDecimal,additionAlgebra,fracToDecimal,simplifyFrac,squares,circFractions,factorize,missingDigit,rounding,pythag,orderFractions];
+var functions = [];
+
+var currentCircle = 0;
+var placeValues = ['thousands','hundreds','tens','ones','tenths'];
+
+setInterval(function() {
+
+  if(justChanged)
+  {
+    justChanged = false;
+    return;
+  }
+  var timer = document.getElementById('timer');
+
+  var strTime = timer.innerHTML.split(':');
+  var minute = Number(strTime[0]);
+  var second = Number(strTime[1]);
+
+  var pad = '';
+
+  if(second >= 59)
+  {
+    minute++;
+    second = 0;
+  }
+  else
+  {
+    second++;
+  }
+
+  if(second < 10)
+  {
+    pad = '0';
+  }
+
+  timer.innerHTML = minute.toFixed(0) + ':' + pad + second.toFixed(0);
+
+},1000);
+
+window.onload = function() {
+  var storedStr = sessionStorage.getItem('questionTypes')
+
+  var para;
+
+  if(storedStr != null)
+  {
+    para = storedStr.split('');
+  }
+  else {
+    para = '0';
+  }
+
+  for(var i = 0; i < para.length;i++)
+  {
+    if(para[i] === '1')
+    {
+      functions.push(allFunctions[i]);
+    }
+  }
+
+  if(functions.length == 0)
+  {
+    functions = allFunctions;
+  }
+
+  nextQuestion();
+
+  var ansIn = document.getElementById("answer");
+
+  ansIn.addEventListener('keyup', function(event) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      document.getElementById("submitButton1").click();
+    }
+  });
+
+  window.addEventListener('keyup', function(event) {
+    if(event.key === 'ArrowRight')
+    {
+      event.preventDefault();
+      document.getElementById('nextButton1').click();
+    }
+  })
+}
+
+function sieve(n)
+{
+  var arr = [];
+  var count = 0;
+  arr.push(0,0);
+  for(var i = 0; i < n;i++)
+  {
+    arr.push(false);
+  }
+  var sqrt = Math.sqrt(n);
+  for(var i = 2; i < sqrt;i++)
+  {
+    if(arr[i])
+    {
+      for(var j = Math.pow(i,2); i < n;i+=i)
+      {
+        arr[j] = true;
+      }
+    }
+    else{
+      count++;
+    }
+  }
+  arr[0] = count;
+  return arr;
+}
+
+function isPrime(n)
+{
+  var sqrt = Math.sqrt(n);
+  for(var i = 2; i <= sqrt;i++)
+  {
+    if(n % i == 0)
+    {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function getContext(doClear = false)
+{
+  var canvas = document.getElementById('q-canvas');
+  var context = canvas.getContext('2d');
+  if(doClear)
+  {
+    clear(context);
+  }
+  return context;
+}
+
+function clear(context)
+{
+  var canvas = document.getElementById('q-canvas');
+  context.beginPath();
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  return context;
+}
+
+function getFirstArg(str)
+{
+  var newStr = '';
+  for(var i = 0; i < str.length;i++)
+  {
+    var ch = str.substring(i,i+1);
+    if(i === ' ')
+    {
+      return newStr;
+    }
+    newStr += ch;
+  }
+
+  return newStr;
+}
+
+function evaluateAns()
+{
+  if(currentCircle >= 3)
+  {
+    return;
+  }
+
+  var strCorrect = document.getElementById('questionAnswer').innerHTML;
+  var strAns = document.getElementById('answer').value;
+  var evaluation = document.getElementById('evaluation');
+
+  if(!strAns)
+  {
+    evaluation.innerHTML = 'Please Enter An Answer!';
+    evaluation.style.color = '#454545';
+    return;
+  }
+
+  var args = strCorrect.split(' ');
+
+  var answer;
+  var correct;
+  var correctFormatted;
+
+  switch(args[0]){
+    case 'number':
+      strAns = strAns.replace(',','');
+      answer = Number(strAns);
+      correct = Number(args[1]);
+      correctFormatted = correct;
+      break;
+    case 'fraction':
+      var starr = strAns.split('/');
+      answer = Number(starr[0]) / Number(starr[1]);
+      correct = Number(args[1]) / Number(args[2]);
+      correctFormatted = args[1] + '/' + args[2];
+      break;
+    case 'ul':
+      var starr = strAns.split(/[\s,]+/);
+
+      answer = 1;
+      correct = 0;
+
+      for(var i = args.length - 1; i >= 1;i--)
+      {
+        for(var j = starr.length - 1; j >= 0;j--)
+        {
+          if(args[i] === starr[j])
+          {
+            args.splice(i,1);
+            starr.splice(j,1);
+            break;
+          }
+        }
+      }
+
+      correctFormatted = strCorrect.substring(3);
+
+      if(args.length === 1 && starr.length === 0)
+      {
+        correct = 1;
+      }
+      break;
+    case 'ol':
+      var starr = strAns.split(/[\s,]+/);
+
+      if(starr.length !== args.length - 1)
+      {
+        answer = 1;
+        correct = 0;
+        break;
+      }
+
+      answer = 1;
+      correct = 1;
+
+      correctFormatted = '';
+
+      for(var i = 1; i < args.length;i++)
+      {
+        var vals = args[i].split('-');
+        starr.forEach((item, i) => {
+          if(item === vals[0])
+          {
+            starr[i] = vals[1];
+          }
+        });
+      }
+
+      for(var i = 1; i < starr.length && correct === 1;i++)
+      {
+        if(starr[i] < starr[i-1])
+        {
+          correct = 0;
+        }
+      }
+
+      break;
+  }
+
+  if(answer === correct && !justCorrect) {
+    evaluation.innerHTML = 'Correct!';
+    evaluation.style.color = '#1dbf3d';
+    justCorrect = true;
+    var circle = document.getElementById('c' + currentCircle++);
+    circle.className = 'circle-green';
+  }
+  else if(!justCorrect){
+    evaluation.innerHTML = 'Incorrect!';
+    evaluation.style.color = '#eb240e';
+
+    if(currentCircle < 3)
+    {
+      var circle = document.getElementById('c' + currentCircle++);
+      circle.className = 'circle-red';
+      if(currentCircle == 3)
+      {
+        //var solution = document.getElementById('solution');
+        evaluation.style.color = '#222z';
+        evaluation.innerHTML = 'The correct answer was: ' + correctFormatted;
+        justCorrect = true;
+      }
+    }
+  }
+
+  //console.log('Given ' + answer + ' and looking for ' + correct);
+}
+
+function nextQuestion()
+{
+  if(!justCorrect)
+  {
+    return false;
+  }
+  justCorrect = false;
+
+  var correct = document.getElementById('questionAnswer');
+  var answer = document.getElementById('answer');
+  var evaluation = document.getElementById('evaluation');
+  var num = document.getElementById('question_number');
+  var solution = document.getElementById('solution');
+  var timer = document.getElementById('timer');
+
+  currentCircle = 0;
+  for(var i = 0; i < 3;i++)
+  {
+    document.getElementById('c' + i).className = 'circle';
+  }
+
+  justChanged = true;
+  answer.value = '';
+  evaluation.style.color = '#444';
+  evaluation.innerHTML = 'Choose An Answer';
+  timer.innerHTML = '0:00';
+  //solution.innerHTML = '';
+  var method = functions[Math.floor(Math.random() * functions.length)];
+  correct.innerHTML = method();
+  num.innerHTML = num.innerHTML.substring(0,num.innerHTML.indexOf('#') + 1) + (parseInt(num.innerHTML.substring(num.innerHTML.indexOf('#') + 1)) + 1);
+}
+
+
+function divisionNoDecimal()
+{
+  var higher_d = 1000;
+
+  var dividendStr = sessionStorage.getItem('dividendMax');
+
+  if(dividendStr != null)
+  {
+    higher_d = Math.pow(10,parseInt(dividendStr));
+  }
+
+  var dividend = Math.floor(Math.random() * higher_d);
+
+  while(isPrime(dividend))
+  {
+      dividend = Math.floor(Math.random() * higher_d);
+  }
+
+  var choices = factors(dividend);
+
+  var choice = choices[Math.floor(Math.random() * choices.length)];
+
+  longDivision(choice,dividend);
+
+  return 'number ' + (dividend/choice).toFixed(7);
+}
+
+function factors(dividend)
+{
+  var fac = [];
+
+  for(var i = 2; i <= dividend/2;i++)
+  {
+    if(dividend % i === 0) {
+      fac.push(i);
+    }
+  }
+
+  return fac;
+}
+
+function longDivision(divisor,dividend)
+{
+  var str = divisor.toString();
+  var xPos = 100;
+  if(str.length < 2)
+  {
+    str = ' ' + str;
+  }
+  else if(str.length === 3)
+  {
+    xPos = 70;
+  }
+  else if(str.length === 4)
+  {
+    xPos = 30;
+  }
+
+  var context = getContext();
+  context.font = '72px Courier';
+  clear(context);
+  var divImg = document.getElementById('division');
+  document.getElementById('instructions').innerHTML = 'Instructions: Divide the numbers below, and write your answer without a remainder';
+  context.drawImage(divImg,45,11);
+  context.fillText(str,xPos,150);
+  context.fillText(dividend.toString(),235,150);
+}
+
+function multiplication()
+{
+  var lower = 1;
+  var higher_m = 1000;
+  var higher_m2 = 100;
+
+  var multiplicand = sessionStorage.getItem('multiplicandMax');
+  var multiplier = sessionStorage.getItem('multiplierMax');
+
+  if(multiplicand != null)
+  {
+    higher_m = Math.pow(10,parseInt(multiplicand));
+  }
+  if(multiplier != null)
+  {
+    higher_m2 = Math.pow(10,parseInt(multiplier));
+  }
+
+  var rand1 = Math.floor(Math.random() * (higher_m - lower)) + lower;
+  var rand2 = Math.floor(Math.random() * (higher_m2 - lower)) + lower;
+
+  var context = getContext();
+  context.font = '72px Courier';
+  clear(context);
+
+  var question = rand1.toFixed(0) + ' x ' + rand2.toFixed(0) + ' = ';
+  context.fillText(question,60,150);
+  document.getElementById('instructions').innerHTML = 'Instructions: Multiply the numbers together';
+  document.getElementById('q-canvas').setAttribute('aria-label',rand1.toFixed(0) + ' times ' + rand2.toFixed(0) + ' equals?');
+  return 'number ' + rand1 * rand2;
+}
+
+function additionAlgebra()
+{
+  var pool = [];
+
+  for(var i = 1; i <= 100;i++)
+  {
+    pool.push(i);
+  }
+
+  var a = [];
+
+  for(var j = 0; j < 3;j++)
+  {
+    var i = Math.floor(Math.random()*pool.length);
+    a.push(pool[i]);
+    pool.splice(i,1);
+  }
+  a.sort(function(e,f) {
+    return e-f;
+  });
+
+  var pos = Math.floor(Math.random() * 4);
+
+  var str = '';
+
+  switch(pos)
+  {
+    case 3: str = a[0] + ' + ' + a[2] + ' = ' + a[1] + ' + __'; break;
+    case 2: str = a[0] + ' + ' + a[2] + ' = ' + '__ + ' + a[1]; break;
+    case 1: str = a[1] + ' + __' + ' = ' + a[0] + ' + ' + a[2]; break;
+    case 0: str = '__ + ' + a[1] + ' = ' + a[0] + ' + ' + a[2]; break;
+  }
+
+  var context = getContext();
+  context.font = '48px Courier';
+  clear(context);
+  context.fillText(str,50,150);
+
+  document.getElementById('instructions').innerHTML = 'Instructions: (Mental Math) Find the missing value that goes in the blank';
+
+  return 'number ' + (a[0] + a[2] - a[1]);
+}
+
+function fracToDecimal()
+{
+  var denominators  = [2, 4, 5, 8, 10, 16, 20, 25, 32, 40, 50, 64, 80, 100];
+  var denominator = denominators[Math.floor(Math.random() * denominators.length)];
+  var numerator = Math.floor(Math.random() * (denominator - 1)) + 1;
+
+  var context = getContext();
+  context.font = '48px Courier';
+  clear(context);
+  var num = numerator.toFixed(0);
+  var xPos = 280;
+  var xPos2 = 280;
+  var denom = denominator.toFixed(0);
+  if(num.length < 2)
+  {
+    xPos = 290;
+  }
+  if(denom.length < 2)
+  {
+    xPos2 = 290;
+  }
+  else if(denom.length > 2)
+  {
+    xPos2 = 265;
+  }
+
+  document.getElementById('instructions').innerHTML = 'Instructions: Convert the below fraction into decimal form';
+  context.fillText(numerator.toFixed(0),xPos,100);
+  context.fillText(denominator.toFixed(0),xPos2,175);
+  context.fillStyle = '#000';
+
+  context.moveTo(260,125);
+  context.lineTo(350,125);
+  context.stroke();
+
+  return 'number ' + (numerator/denominator).toFixed(7);
+}
+
+function simplifyFrac()
+{
+  var context = getContext();
+  context.font = '48px Courier';
+  clear(context);
+
+  var denominator = Math.floor(Math.random() * 12) + 1;
+  var numerator = Math.floor(Math.random() * (denominator-1)) + 1;
+  var scalar = Math.floor(Math.random() * 11) + 2;
+
+  var num = (numerator * scalar).toFixed(0)
+  var xPos = 280;
+  var xPos2 = 280;
+  var denom = (denominator * scalar).toFixed(0),xPos2
+  if(num.length < 2)
+  {
+    xPos = 290;
+  }
+  if(denom.length < 2)
+  {
+    xPos2 = 290;
+  }
+  else if(denom.length > 2)
+  {
+    xPos2 = 265;
+  }
+
+  context.fillText(num,xPos,100);
+  context.fillText(denom,xPos2,175);
+  context.fillStyle = '#000';
+
+  context.moveTo(260,125);
+  context.lineTo(350,125);
+  context.stroke();
+
+  document.getElementById('instructions').innerHTML = 'Instructions: Simplify the fraction';
+
+  var primes = primeFactors(numerator);
+  var primes2 = primeFactors(denominator);
+
+  var newNum = 1;
+  var newDenom = 1;
+
+  loopy:
+  for(var i = primes.length-1; i >= 0;i--)
+  {
+    for(var j = primes2.length-1; j >= 0;j--)
+    {
+      if(primes[i] == primes2[j])
+      {
+        primes.splice(i,1);
+        primes2.splice(j,1);
+        continue loopy;
+      }
+    }
+    newNum *= primes[i];
+  }
+  for(var j = 0;j <primes2.length;j++)
+  {
+    newDenom *= primes2[j];
+  }
+
+  return 'fraction ' + newNum + ' ' + newDenom;
+}
+
+function primeFactors(n)  {
+  var sqrt = Math.sqrt(n);
+  var ret = [];
+  for(var i = 2; i <= sqrt;i++)
+  {
+      if(n % i == 0)
+      {
+        var factors = primeFactors(n/i);
+        for(var j = 0; j < factors.length;j++)
+        {
+          ret.push(factors[j]);
+        }
+        ret.push(i);
+        break;
+      }
+  }
+
+  if(ret.length == 0)
+  {
+      ret.push(n);
+  }
+  return ret;
+}
+
+function squares() {
+  var context = getContext();
+  context.font = '32px Courier';
+  clear(context);
+
+  var value = sessionStorage.getItem('sideLengthType');
+  value = value == null || value === 'true'?true:false;
+
+  var sideLength;
+  if(value) {
+    sideLength = (Math.floor(Math.random() * 1200) + 1)/100;
+  } else {
+    sideLength = (Math.floor(Math.random() * 12) + 1);
+  }
+
+  context.moveTo(350,150);
+  context.lineTo(350,50);
+  context.lineTo(250,50);
+  context.lineTo(250,150);
+  context.lineTo(350,150);
+  context.stroke();
+
+  context.fillText(sideLength.toFixed(value?2:0),value?260:290,180);
+  var rand = Math.floor(Math.random() * 2);
+  if(rand == 0)
+  {
+    document.getElementById('instructions').innerHTML = 'Instructions: Find the <strong>area</strong> of the square';
+    return 'number ' + (sideLength * sideLength).toFixed(value?7:0);
+  }
+  else if(rand == 1)
+  {
+    document.getElementById('instructions').innerHTML = 'Instructions: Find the <strong>perimeter</strong> of the square';
+    return 'number ' + (sideLength * 4).toFixed(value?7:0);
+  }
+}
+
+function circFractions()
+{
+  var denom = Math.floor(Math.random() * 11) + 2;
+  var num = Math.floor(Math.random() * denom) + 1;
+  var radius = 80;
+
+  var scalar = (2 * Math.PI)/denom;
+  var angle = (2 * Math.PI) * (num/denom);
+
+  var context = getContext();
+  clear(context);
+  context.beginPath();
+
+  var colors = ['#03ecfc','#f716f4','#7016f7','#25d611','#e69109','#828282','#fae22f'];
+
+  context.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+  context.moveTo(300,100);
+  context.lineTo(300,20);
+  context.arc(300,100,radius,1.5 * Math.PI,1.5 * Math.PI + angle);
+  context.fill();
+
+  context.beginPath();
+  context.fillStyle = '#000';
+  context.arc(300,100,radius,0,2 * Math.PI);
+  context.stroke();
+
+  context.beginPath();
+  for(var i = 0; i < denom;i++)
+  {
+    context.moveTo(300,100);
+    var angle = i * scalar + 1.5*Math.PI;
+    var x = Math.cos(angle) * radius;
+    var y = Math.sin(angle) * radius;
+    context.lineTo(300 + x, 100 + y);
+  }
+  context.stroke();
+
+  document.getElementById('instructions').innerHTML = 'Instructions: What fraction is represented by the shaded area (<strong>No</strong> need to simplify!)';
+  return 'fraction ' + num + ' ' + denom;
+}
+
+function factorize()
+{
+  var context = getContext();
+  clear(context);
+  context.font = '144px Courier';
+
+  var bigNum;
+
+  do
+  {
+      bigNum = Math.floor(Math.random() * 200);
+  } while(isPrime(bigNum));
+
+  var primes = primeFactors(bigNum);
+
+  var strAns = 'ul';
+  primes.forEach((item, i) => {
+    strAns += ' ' + item;
+  });
+
+  context.fillText(bigNum,185,165);
+  context.stroke();
+
+  document.getElementById('instructions').innerHTML = 'Instructions: Find the prime factorization of this number (separate values with a "," or a space)';
+  return strAns;
+}
+
+function missingDigit()
+{
+  var context = getContext();
+  clear(context);
+  context.font = '48px Courier';
+
+  var numOne = Math.floor(Math.random() * 1000) + 10;
+  var numTwo = Math.floor(Math.random() * 20) + 1;
+
+  var product = numOne * numTwo;
+
+  var str1 = numOne.toFixed(0);
+  var str2 = numTwo.toFixed(0);
+  var str3 = product.toFixed(0);
+
+  var digit = '';
+
+  var strChosen = Math.floor(Math.random() * 3);
+  var omit = Math.floor(Math.random() * (strChosen === 1?str1:strChosen === 2?str2:str3).length);
+  if(strChosen === 1)
+  {
+    digit = str1.substring(omit,omit + 1);
+    str1 = str1.substring(0,omit) + '□' + str1.substring(omit + 1);
+  }
+  else if (strChosen === 2) {
+    digit = str2.substring(omit,omit + 1);
+    str2 = str2.substring(0,omit)  + '□' +  str2.substring(omit + 1);
+  }
+  else {
+    digit = str3.substring(omit,omit + 1);
+    str3 = str3.substring(0,omit)  + '□' +  str3.substring(omit + 1);
+  }
+
+  while(str1.length < 5 || str2.length < 5 || str3.length < 5)
+  {
+    if(str1.length < 5)
+      str1 = ' ' + str1;
+    if(str2.length < 5)
+      str2 = ' ' + str2;
+    if(str3.length < 5)
+      str3 = ' ' + str3;
+  }
+
+  str2 = 'x' + str2.substring(1);
+
+  document.getElementById('instructions').innerHTML = 'Instructions: Find the missing digit';
+
+  context.fillText(str1,210,90);
+  context.fillText(str2,210,140);
+  context.beginPath();
+  context.moveTo(190,150);
+  context.lineTo(365,150);
+  context.fillText(str3,210,190);
+  context.stroke();
+
+  return 'number ' + digit;
+}
+
+function rounding()
+{
+  var context = getContext();
+  clear(context);
+  context.font = '100px Courier';
+
+  var num = (Math.floor(Math.random() * 900000) / 100).toFixed(2);
+  var upper = 5;
+  for(var i = num; i > .01;i/=10)
+  {
+    if(num < Math.pow(10,upper - 2))
+    {
+      upper--;
+    }
+  }
+  var power = upper - 1 - Math.floor(Math.random() * upper);
+  var place = placeValues[power];
+
+  document.getElementById('instructions').innerHTML = 'Instructions: Round the number below to the ' + place + ' place';
+
+  context.beginPath();
+  context.fillText(num.toString(),80,160);
+  context.stroke();
+
+  return 'number ' + round(num,power);
+}
+
+function round(num,place)
+{
+  while(num.length < 7)
+  {
+    var index = num.indexOf('.');
+    if(index === -1)
+    {
+      num = num + '.';
+      index = num.indexOf('.');
+    }
+    var sub = num.substring(index);
+    if(sub.length < 2) {
+      sub = sub + '0';
+      num = num.substring(0,index) + sub;
+    }
+    else {
+      num = '0' + num;
+    }
+  }
+  num = num.replace('.','');
+  var digit = Number(num.substring(place + 1,place + 2));
+  num = num.substring(0,place + 1);
+  for(var i = 0; i < 6 - place;i++){
+    num = num + '0';
+  }
+  if(digit >= 5)
+  {
+    var rounded = false;
+    var i = place;
+    while(!rounded)
+    {
+      if(num.substring(i, i + 1) !== '9')
+      {
+        var current = Number(num.substring(i,i+1));
+        current++;
+        num = num.substring(0,i) + current + num.substring(i + 1);
+        break;
+      }
+      else {
+        num = num.substring(0, i) + '0' + num.substring(i + 1);
+      }
+    }
+  }
+
+  return (Number(num) / 1000).toFixed(2);
+}
+
+function pythag() {
+  var context = getContext();
+  clear(context);
+  context.font = '24px Helvetica';
+
+  var sideOne = Math.floor(Math.random() * 15) + 1;
+
+  var isHypotenuse = Math.floor(Math.random() * 2);
+
+  if(isHypotenuse) {
+    var hypotenuse = Math.floor(Math.random() * 12) + sideOne + 2;
+    var sideTwo = Math.sqrt((Math.pow(hypotenuse,2) - Math.pow(sideOne,2))).toFixed(2);
+  }
+  else {
+    var sideTwo = Math.floor(Math.random() * 15) + 1;
+    var hypotenuse = Math.sqrt((Math.pow(sideOne,2) + Math.pow(sideTwo,2))).toFixed(2);
+  }
+
+  context.beginPath();
+  context.moveTo(100,175);
+  context.lineTo(475,175);
+  context.lineTo(475,25);
+  context.lineTo(100,175);
+
+  if(isHypotenuse)
+  {
+    if(sideOne < sideTwo)
+    {
+      context.fillText(sideOne,485,110);
+    }
+    else if(sideTwo < sideOne)
+    {
+      context.fillText(sideOne,280,210);
+    }
+
+    context.fillText(hypotenuse,250,90);
+  }
+  else {
+    if(sideOne < sideTwo)
+    {
+      context.fillText(sideOne,485,110);
+      context.fillText(sideTwo,280,210);
+    }
+    else if(sideTwo < sideOne)
+    {
+      context.fillText(sideOne,280,210);
+      context.fillText(sideTwo,485,110);
+    }
+  }
+
+  context.stroke();
+
+  document.getElementById('instructions').innerHTML = 'Instructions: Find the missing side length (round to two decimal places)';
+
+  return 'number ' + (isHypotenuse?sideTwo:hypotenuse);
+}
+
+function orderFractions()
+{
+  var context = getContext();
+  clear(context);
+  context.font = '24px Courier';
+  context.beginPath();
+
+  var nums = [];
+  var order = ['A','B','C','D','E'];
+  var values = [-1,-1,-1,-1,-1];
+  for(var i = 0; i < 5;i++)
+  {
+    var value = 0;
+    var type = Math.floor(Math.random() * 3);
+
+    switch(type)
+    {
+      //Fractions
+      case 0:
+        var denominator = Math.floor(Math.random() * 12) + 1;
+        var numerator = Math.floor(Math.random() * (denominator-1)) + 1;
+        value = numerator / denominator;
+
+        context.fillText(numerator.toFixed(0), i * 90 + 80, 105);
+        context.moveTo(i * 90 + 75, 110);
+        context.lineTo(i * 90 + 110, 110);
+        context.fillText(denominator.toFixed(0), i * 90 + 80, 135);
+        break;
+      //Decimals
+      case 1:
+        value = Math.floor(Math.random() * 101) / 100;
+        context.fillText(value.toFixed(2), i * 90 + 80, 120);
+        break;
+      //Percents
+      case 2:
+        var val = Math.floor(Math.random() * 101);
+        value = val / 100;
+        context.fillText(val + '%', i * 90 + 80, 120);
+        break;
+    }
+
+
+    nums.push(value.toFixed(7));
+
+    context.fillText(order[i], i * 90 + 80, 170);
+  }
+
+  var previous = -1;
+  var count = 0;
+  var current = 1;
+  while(count < order.length)
+  {
+    var smallest = [];
+    var val = 20;
+
+    for(var j = 0; j < nums.length;j++)
+    {
+      if(nums[j] < val && nums[j] > previous)
+      {
+        smallest = [order[j]];
+        val = nums[j];
+      }
+      else if(nums[j] === val)
+      {
+        smallest.push(order[j]);
+      }
+    }
+
+    for(var j = 0; j < smallest.length;j++)
+    {
+      var dex = order.indexOf(smallest[j]);
+      values[dex] = current;
+      count++;
+    }
+    current++;
+    previous = val;
+  }
+
+  document.getElementById('instructions').innerHTML = 'Instructions: Order the values below and write your answer with the corresponding letters.'
+
+  var ret = 'ol';
+  for(var i = 0; i < order.length;i++)
+  {
+    var ord = order[i];
+    var valu = values[i];
+
+    ret = ret + ' ' + ord + '-' + valu;
+  }
+
+  context.stroke();
+
+  console.log(ret);
+  return ret;
+}
